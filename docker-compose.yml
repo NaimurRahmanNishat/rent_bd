@@ -117,9 +117,11 @@ services:
     restart: always
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - static_volume:/var/www/static:ro
       - media_volume:/var/www/uploads:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       backend1:
         condition: service_healthy
