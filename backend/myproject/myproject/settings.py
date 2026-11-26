@@ -187,5 +187,5 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
-if hasattr(globals(), "STORAGES") and "staticfiles" in STORAGES:
+if "STORAGES" in globals() and "staticfiles" in STORAGES:
     STATICFILES_STORAGE = STORAGES["staticfiles"]["BACKEND"]
