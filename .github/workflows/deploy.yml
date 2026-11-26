@@ -1,3 +1,4 @@
+# .github/workflows/deploy.yml
 name: CI/CD Deploy to VPS
 
 on:
@@ -39,6 +40,7 @@ jobs:
       - name: Install frontend deps, lint & build
         working-directory: frontend
         env:
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'https://rentbd.tech' }}
           NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '' }}
           NEXT_TELEMETRY_DISABLED: "1"
         run: |
@@ -53,7 +55,7 @@ jobs:
 
     steps:
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}

@@ -1,15 +1,13 @@
 # docker-compose.yml
-version: '3.8'
-
 services:
   db:
     image: postgres:16-alpine
     container_name: rentbd_db
     restart: always
     environment:
-      POSTGRES_DB: ${DB_NAME:?DB_NAME is required}
-      POSTGRES_USER: ${DB_USER:?DB_USER is required}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      POSTGRES_DB: ${DB_NAME:-rentbd_db}
+      POSTGRES_USER: ${DB_USER:-rentbd_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-rentbd_password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -62,7 +60,7 @@ services:
     container_name: rentbd_backend1
     restart: always
     command: >
-      gunicorn myproject.wsgi:application
+      gunicorn --no-control-socket myproject.wsgi:application
       --bind 0.0.0.0:8000
       --workers 3
     env_file:
@@ -102,6 +100,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://rentbd.tech}
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
     container_name: rentbd_frontend
     restart: always

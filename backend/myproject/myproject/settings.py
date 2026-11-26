@@ -119,6 +119,8 @@ CLOUDINARY_STORAGE = {
     "API_SECRET": config("CLOUDINARY_API_SECRET", default=""),
 }
 
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
@@ -184,3 +186,6 @@ SIMPLE_JWT = {
 
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
+
+if hasattr(globals(), "STORAGES") and "staticfiles" in STORAGES:
+    STATICFILES_STORAGE = STORAGES["staticfiles"]["BACKEND"]
