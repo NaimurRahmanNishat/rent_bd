@@ -1,0 +1,144 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: rentbd_db
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:?DB_NAME is required}
+      POSTGRES_USER: ${DB_USER:?DB_USER is required}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - rent_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: rentbd_redis
+    restart: always
+    networks:
+      - rent_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    build:
+      context: ./backend/myproject
+      dockerfile: Dockerfile
+    container_name: rentbd_migrate
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput"
+    env_file:
+      - ./backend/myproject/.env
+    environment:
+      DB_HOST: db
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/uploads
+      - logs_volume:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - rent_network
+
+  backend1: &backend_service
+    build:
+      context: ./backend/myproject
+      dockerfile: Dockerfile
+    container_name: rentbd_backend1
+    restart: always
+    command: >
+      gunicorn myproject.wsgi:application
+      --bind 0.0.0.0:8000
+      --workers 3
+    env_file:
+      - ./backend/myproject/.env
+    environment:
+      DB_HOST: db
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/uploads
+      - logs_volume:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - rent_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  backend2:
+    <<: *backend_service
+    container_name: rentbd_backend2
+
+  backend3:
+    <<: *backend_service
+    container_name: rentbd_backend3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+    container_name: rentbd_frontend
+    restart: always
+    env_file:
+      - ./frontend/.env.local
+    networks:
+      - rent_network
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: rentbd_nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - static_volume:/var/www/static:ro
+      - media_volume:/var/www/uploads:ro
+    depends_on:
+      backend1:
+        condition: service_healthy
+      backend2:
+        condition: service_healthy
+      backend3:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    networks:
+      - rent_network
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
+  logs_volume:
+
+networks:
+  rent_network:
+    driver: bridge
