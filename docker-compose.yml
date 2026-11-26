@@ -60,7 +60,7 @@ services:
     container_name: rentbd_backend1
     restart: always
     command: >
-      gunicorn --no-control-socket myproject.wsgi:application
+      gunicorn myproject.wsgi:application
       --bind 0.0.0.0:8000
       --workers 3
     env_file:
