@@ -140,6 +140,8 @@ MAILERS = {
 # Super User
 AUTH_USER_MODEL = "api.User"
 
+# CORS Configuration
+CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = (
     "accept",
     "authorization",
@@ -159,6 +161,15 @@ CORS_ALLOW_METHODS = (
     "PUT",
 )
 
+CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = "Lax"
+
+SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+
+# REST Framework configuration
 REST_FRAMEWORK = {
     # JWT Authentication
     "DEFAULT_AUTHENTICATION_CLASSES": [
